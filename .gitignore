@@ -1,0 +1,18 @@
+# Сборка
+bin/
+obj/
+publish/
+*.user
+*.suo
+*.pdb
+*.cache
+*.log
+
+# IDE
+.vs/
+.idea/
+*.DotSettings.user
+
+# Артефакты
+TestResults/
+artifacts/
