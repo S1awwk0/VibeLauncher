@@ -9,10 +9,19 @@
     <AssemblyName>VibeLauncher</AssemblyName>
     <RootNamespace>VibeLauncher</RootNamespace>
     <Version>1.0.0</Version>
-    <ApplicationIcon></ApplicationIcon>
+    <FileVersion>1.0.0.0</FileVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <ApplicationIcon>Assets\VibeLauncher.ico</ApplicationIcon>
     <Authors>Vibe Launcher</Authors>
+    <Company>Vibe Launcher</Company>
     <Product>Vibe Launcher</Product>
+    <Description>Vibe Launcher — лаунчер Minecraft для Windows</Description>
+    <Copyright>© 2026 Vibe Launcher</Copyright>
     <StartupObject>VibeLauncher.App</StartupObject>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\VibeLauncher.ico" />
+  </ItemGroup>
 
 </Project>
