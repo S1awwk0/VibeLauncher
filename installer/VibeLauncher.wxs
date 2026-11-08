@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <Package Name="Vibe Launcher"
+           Manufacturer="Vibe Launcher"
+           Version="$(var.Version)"
+           UpgradeCode="B575F3D8-DF46-4DBC-AC34-16BEDA3321B5"
+           Scope="perUser"
+           Language="1049"
+           Codepage="65001"
+           Compressed="yes">
+
+    <SummaryInformation Description="Vibe Launcher — лаунчер Minecraft для Windows"
+                        Manufacturer="Vibe Launcher" />
+
+    <MajorUpgrade DowngradeErrorMessage="На компьютере уже установлена более новая версия Vibe Launcher." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="AppIcon" SourceFile="$(var.ProjectDir)\Assets\VibeLauncher.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/S1awwk0/VibeLauncher" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+    <Property Id="ALLUSERS" Value="2" />
+    <Property Id="MSIINSTALLPERUSER" Value="1" />
+
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.ProjectDir)\installer\License.rtf" />
+    <WixVariable Id="WixUIBannerBmp" Value="$(var.ProjectDir)\installer\banner.bmp" />
+    <WixVariable Id="WixUIDialogBmp" Value="$(var.ProjectDir)\installer\dialog.bmp" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="VibeLauncher" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppProgramMenuDir" Name="Vibe Launcher" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+
+    <Feature Id="MainFeature" Title="Vibe Launcher" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="DesktopShortcut" />
+    </Feature>
+
+    <UI>
+      <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    </UI>
+
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Files Include="$(var.PublishDir)\**" />
+    </ComponentGroup>
+
+    <Component Id="StartMenuShortcut" Directory="AppProgramMenuDir" Guid="B8019487-9EB3-4A12-B654-811BBA421979">
+      <Shortcut Id="StartMenuShortcut"
+                Name="Vibe Launcher"
+                Description="Запустить Vibe Launcher"
+                Target="[INSTALLFOLDER]VibeLauncher.exe"
+                WorkingDirectory="INSTALLFOLDER"
+                Icon="AppIcon" />
+      <RemoveFolder Id="RemoveAppProgramMenuDir" Directory="AppProgramMenuDir" On="uninstall" />
+      <RegistryValue Root="HKCU" Key="Software\Vibe Launcher" Name="StartMenu" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Component Id="DesktopShortcut" Directory="DesktopFolder" Guid="55ABA7A0-6076-4354-B928-439FBD888CCB">
+      <Shortcut Id="DesktopShortcut"
+                Name="Vibe Launcher"
+                Description="Запустить Vibe Launcher"
+                Target="[INSTALLFOLDER]VibeLauncher.exe"
+                WorkingDirectory="INSTALLFOLDER"
+                Icon="AppIcon" />
+      <RegistryValue Root="HKCU" Key="Software\Vibe Launcher" Name="Desktop" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+  </Package>
+</Wix>
