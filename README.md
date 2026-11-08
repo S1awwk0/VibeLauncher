@@ -1,5 +1,9 @@
 # Vibe Launcher
 
+<p align="center">
+  <img src="Assets/VibeLauncher.png" width="96" alt="Vibe Launcher">
+</p>
+
 Русскоязычный лаунчер Minecraft для Windows на WPF (.NET 10). Поддерживает лицензионные
 (Microsoft) и офлайн-аккаунты, установку версий и модовых загрузчиков, сборки с Modrinth,
 скины (Mojang, Ely.by, TLauncher, локальные файлы) и разбор логов с причинами вылетов.
@@ -35,6 +39,16 @@
     ошибки OpenGL, сетевые ошибки, повреждённые библиотеки и т.д.
   - Подхватываются `crash-reports` и `hs_err_pid*.log`.
 
+## Установка
+
+Готовый установщик лежит в [GitHub Releases](https://github.com/S1awwk0/VibeLauncher/releases).
+Это self-contained MSI: отдельно ставить .NET Runtime не нужно.
+
+- Устанавливается в `%LOCALAPPDATA%\Programs\VibeLauncher` без прав администратора.
+- Создаёт ярлыки в меню «Пуск» и на рабочем столе.
+- Удаляется через «Параметры → Приложения → Vibe Launcher».
+- Данные игры и настройки остаются в `%APPDATA%\VibeLauncher` и при удалении не стираются.
+
 ## Сборка и запуск
 
 Требования: Windows 10/11, [.NET SDK 10](https://dotnet.microsoft.com/download).
@@ -46,6 +60,24 @@ dotnet build -c Release
 ```
 
 Проект не использует внешние NuGet-пакеты.
+
+## Сборка установщика
+
+Установщик собирается через WiX Toolset 5 (global tool) и требует только .NET SDK:
+
+```powershell
+dotnet tool install --global wix --version 5.0.2
+powershell -ExecutionPolicy Bypass -File .\installer\build-release.ps1
+```
+
+Скрипт публикует self-contained `win-x64` сборку и создаёт
+`dist\VibeLauncher-Setup-<версия>-win-x64.msi` вместе с `SHA256SUMS.txt`.
+
+## Ветки
+
+- `main` — стабильные версии и теги релизов.
+- `develop` — интеграция изменений.
+- `feature/*` — отдельные задачи, после проверки сливаются в `develop`.
 
 ## Настройка входа Microsoft
 
