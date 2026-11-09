@@ -141,10 +141,19 @@ public static class SkinService
 
         try
         {
-            await HttpService.DownloadFileAsync(url, dest, null, 0, ct);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(TimeSpan.FromSeconds(30));
+            await HttpService.DownloadFileAsync(url, dest, null, 0, timeout.Token);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            CleanupDownload(dest);
+            throw new InvalidOperationException(
+                $"Сайт TLauncher не ответил за 30 секунд. Попробуйте позже или импортируйте PNG вручную.");
         }
         catch (Exception ex)
         {
+            CleanupDownload(dest);
             throw new InvalidOperationException(
                 $"Не удалось скачать скин TLauncher для «{nickname}»: {ex.Message}", ex);
         }
@@ -163,6 +172,12 @@ public static class SkinService
             Model = "classic",
             IsDefault = isDefault
         };
+    }
+
+    private static void CleanupDownload(string destination)
+    {
+        try { if (File.Exists(destination)) File.Delete(destination); } catch { }
+        try { if (File.Exists(destination + ".part")) File.Delete(destination + ".part"); } catch { }
     }
 
     private static bool IsTLauncherDefaultSkin(string path)
