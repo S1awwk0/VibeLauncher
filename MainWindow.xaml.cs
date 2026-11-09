@@ -72,8 +72,10 @@ public partial class MainWindow : Window
         LoaderTypeCombo.SelectedIndex = 0;
         NewInstanceLoader.ItemsSource = new[] { "Vanilla", "Fabric", "Quilt", "Forge", "NeoForge" };
         NewInstanceLoader.SelectedIndex = 1;
-        SkinProviderCombo.ItemsSource = new[] { "Mojang", "Ely.by", "TLauncher (локально)" };
+        SkinProviderCombo.ItemsSource = new[] { "Mojang", "Ely.by", "TLauncher (сайт)", "TLauncher (локально)" };
         SkinProviderCombo.SelectedIndex = 0;
+        SkinModelCombo.ItemsSource = new[] { "Classic (Steve)", "Slim (Alex)" };
+        SkinModelCombo.SelectedIndex = 0;
 
         _loaderTimer.Tick += async (_, _) =>
         {
@@ -145,6 +147,7 @@ public partial class MainWindow : Window
 
         var index = SkinProviderCombo.Items.IndexOf(s.SkinProvider);
         SkinProviderCombo.SelectedIndex = index >= 0 ? index : 0;
+        SkinModelCombo.SelectedIndex = s.SkinModel == "slim" ? 1 : 0;
 
         _initializing = false;
     }
@@ -1303,7 +1306,8 @@ public partial class MainWindow : Window
         {
             0 => "Mojang: загрузка по никнейму через официальный API.",
             1 => "Ely.by: скины и плащи по никнейму.",
-            2 => "TLauncher: публичного API нет — выполняется поиск локальных файлов или импорт PNG.",
+            2 => "TLauncher: скин скачивается с сайта по никнейму. Вход в аккаунт — на сайте TLauncher.",
+            3 => "TLauncher (локально): поиск skin.png и cape.png в папках TLauncher.",
             _ => ""
         };
     }
@@ -1315,7 +1319,7 @@ public partial class MainWindow : Window
         try
         {
             var provider = SkinProviderCombo.SelectedIndex;
-            if (provider == 2)
+            if (provider == 3)
             {
                 var tlauncher = SkinService.ImportFromTLauncher();
                 if (tlauncher == null)
@@ -1336,18 +1340,28 @@ public partial class MainWindow : Window
                 return;
             }
 
-            SkinStatus.Text = "Загрузка скина…";
-            var profile = provider == 1
-                ? await SkinService.FetchElyAsync(nickname)
-                : await SkinService.FetchMojangAsync(nickname);
+            SkinStatus.Text = provider == 2 ? "Загрузка скина с сайта TLauncher…" : "Загрузка скина…";
+            var profile = provider switch
+            {
+                1 => await SkinService.FetchElyAsync(nickname),
+                2 => await SkinService.FetchTLauncherAsync(nickname),
+                _ => await SkinService.FetchMojangAsync(nickname)
+            };
+
+            // Сайт TLauncher не отдаёт модель скина, поэтому сохраняем выбор пользователя.
+            if (provider == 2)
+                profile.Model = SkinModelCombo.SelectedIndex == 1 ? "slim" : "classic";
 
             SettingsService.Current.SkinNickname = profile.Nickname;
             SettingsService.Current.SkinProvider = SkinProviderCombo.SelectedItem as string ?? "Mojang";
             SettingsService.Save();
 
             DisplaySkin(profile);
-            SkinStatus.Text = $"Загружен скин {profile.Provider}: {profile.Nickname}";
             SkinNicknameBox.Text = profile.Nickname;
+
+            SkinStatus.Text = profile.IsDefault
+                ? $"У ника «{profile.Nickname}» нет скина на TLauncher — сайт вернул стандартный. Загрузите скин на сайте TLauncher и повторите."
+                : $"Загружен скин {profile.Provider}: {profile.Nickname}";
         }
         catch (Exception ex)
         {
@@ -1356,6 +1370,50 @@ public partial class MainWindow : Window
         finally
         {
             SetBusy(false);
+        }
+    }
+
+    private void SkinModel_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var model = SkinModelCombo.SelectedIndex == 1 ? "slim" : "classic";
+        if (_skin != null) _skin.Model = model;
+        UpdateSkinModelText();
+        SettingsService.Current.SkinModel = model;
+        SettingsService.Save();
+    }
+
+    private void UpdateSkinModelText()
+    {
+        if (SkinModelText == null || _skin == null) return;
+        SkinModelText.Text = _skin.Model == "slim"
+            ? "Модель: slim (Alex) · плащ: " + (_skin.LocalCapePath != null ? "есть" : "нет")
+            : "Модель: classic (Steve) · плащ: " + (_skin.LocalCapePath != null ? "есть" : "нет");
+    }
+
+    private void OpenTLauncherSkins_Click(object sender, RoutedEventArgs e)
+    {
+        var nickname = SkinNicknameBox.Text.Trim();
+        var url = string.IsNullOrWhiteSpace(nickname)
+            ? SkinService.TLauncherSkinsUrl
+            : SkinService.TLauncherSkinsUrl + "?nick=" + Uri.EscapeDataString(nickname);
+        OpenExternal(url);
+    }
+
+    private void OpenTLauncherLogin_Click(object sender, RoutedEventArgs e) =>
+        OpenExternal(SkinService.TLauncherLoginUrl);
+
+    private void OpenTLauncherProfile_Click(object sender, RoutedEventArgs e) =>
+        OpenExternal(SkinService.TLauncherProfileUrl);
+
+    private void OpenExternal(string url)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            SkinStatus.Text = "Не удалось открыть браузер: " + ex.Message;
         }
     }
 
@@ -1377,9 +1435,8 @@ public partial class MainWindow : Window
 
         SkinNameText.Text = profile.Nickname is "local" ? "Локальный скин" : profile.Nickname;
         SkinProviderText.Text = profile.Provider;
-        SkinModelText.Text = profile.Model == "slim"
-            ? "Модель: slim (Alex) · плащ: " + (profile.LocalCapePath != null ? "есть" : "нет")
-            : "Модель: classic (Steve) · плащ: " + (profile.LocalCapePath != null ? "есть" : "нет");
+        SkinModelCombo.SelectedIndex = profile.Model == "slim" ? 1 : 0;
+        UpdateSkinModelText();
 
         if (skinBitmap == null && profile.LocalCapePath == null)
             SkinStatus.Text = "Файлы скина не найдены";

@@ -352,6 +352,8 @@ public sealed class SkinProfile
     public string Model { get; set; } = "classic";
     public string? LocalSkinPath { get; set; }
     public string? LocalCapePath { get; set; }
+    /// <summary>Сайт TLauncher вернул стандартный скин: у ника нет собственного.</summary>
+    public bool IsDefault { get; set; }
 }
 
 public sealed class LogEntry
