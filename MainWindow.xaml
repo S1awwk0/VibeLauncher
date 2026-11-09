@@ -692,6 +692,9 @@
                                     <ComboBox x:Name="SkinProviderCombo" Height="34" SelectionChanged="SkinProvider_SelectionChanged"/>
                                     <TextBlock Text="Никнейм" Style="{StaticResource FieldLabel}" Margin="0,10,0,5"/>
                                     <TextBox x:Name="SkinNicknameBox" Height="34" KeyDown="SkinNicknameBox_KeyDown"/>
+                                    <TextBlock Text="Модель скина" Style="{StaticResource FieldLabel}" Margin="0,10,0,5"/>
+                                    <ComboBox x:Name="SkinModelCombo" Height="34"
+                                              SelectionChanged="SkinModel_SelectionChanged"/>
                                     <Button x:Name="LoadSkinButton" Content="Загрузить"
                                             Style="{StaticResource PrimaryButton}" Margin="0,10,0,0" Click="LoadSkin_Click"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
@@ -702,6 +705,23 @@
                                     </StackPanel>
                                     <Button Content="Файл плаща" Style="{StaticResource GhostButton}" FontSize="11.5"
                                             Padding="11,5" HorizontalAlignment="Left" Margin="0,7,0,0" Click="PickCapeFile_Click"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Сайт TLauncher" Style="{StaticResource SectionTitle}" FontSize="14"/>
+                                    <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,6,0,0"
+                                               Text="Скин по никнейму скачивается с сайта TLauncher. Вход в аккаунт, смена скина и плаща выполняются на сайте TLauncher — откроется обычный браузер."/>
+                                    <WrapPanel Margin="0,10,0,0">
+                                        <Button Content="Сайт скинов" Style="{StaticResource SmallButton}"
+                                                Margin="0,0,7,7" Click="OpenTLauncherSkins_Click"/>
+                                        <Button Content="Войти на TLauncher" Style="{StaticResource SmallButton}"
+                                                Margin="0,0,7,7" Click="OpenTLauncherLogin_Click"/>
+                                        <Button Content="Мой профиль" Style="{StaticResource GhostButton}"
+                                                FontSize="11.5" Padding="11,5" Margin="0,0,7,7"
+                                                Click="OpenTLauncherProfile_Click"/>
+                                    </WrapPanel>
                                 </StackPanel>
                             </Border>
 
@@ -725,7 +745,7 @@
 
                             <Border Style="{StaticResource Card}" Margin="0,12,0,0">
                                 <TextBlock Style="{StaticResource Hint}"
-                                           Text="Mojang и Ely.by загружаются по никнейму. TLauncher не имеет публичного API скинов — лаунчер ищет файлы в локальных папках TLauncher, также можно импортировать PNG вручную. Для отображения скина в офлайн-игре установите CustomSkinLoader и примените скин в сборку."/>
+                                           Text="Mojang и Ely.by загружаются по никнейму. TLauncher: скин скачивается с сайта по никнейму, а вход и смена скина выполняются в браузере на tlauncher.org. Если у ника нет скина, сайт отдаёт стандартный — лаунчер предупредит об этом. Для отображения скина в офлайн-игре установите CustomSkinLoader и примените скин в сборку."/>
                             </Border>
                         </StackPanel>
                     </Grid>
