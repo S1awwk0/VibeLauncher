@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using VibeLauncher.Models;
@@ -6,6 +7,15 @@ namespace VibeLauncher.Services;
 
 public static class SkinService
 {
+    public const string TLauncherSkinsUrl = "https://tlauncher.org/en/catalog/skins/nickname/";
+    public const string TLauncherLoginUrl = "https://tlauncher.org/en/#login";
+    public const string TLauncherProfileUrl = "https://tlauncher.org/en/my/";
+    public const string TLauncherRegisterUrl = "https://tlauncher.org/en/reg/";
+
+    // Сайт TLauncher отдаёт этот PNG для любого ника без скина.
+    private static readonly HashSet<string> TLauncherDefaultHashes =
+        new(StringComparer.OrdinalIgnoreCase) { "FD5D1E367087D7EA27C0C38315A466A6" };
+
     public static async Task<SkinProfile> FetchMojangAsync(string nickname, CancellationToken ct = default)
     {
         nickname = nickname.Trim();
@@ -113,6 +123,60 @@ public static class SkinService
 
         await CacheImagesAsync(profile, ct);
         return profile;
+    }
+
+    /// <summary>Скачивает скин ника с сайта TLauncher (https://tlauncher.org).</summary>
+    public static async Task<SkinProfile> FetchTLauncherAsync(string nickname, CancellationToken ct = default)
+    {
+        nickname = nickname.Trim();
+        if (string.IsNullOrWhiteSpace(nickname))
+            throw new InvalidOperationException("Введите никнейм TLauncher.");
+        if (nickname.Length > 64 || nickname.Any(char.IsWhiteSpace))
+            throw new InvalidOperationException("Никнейм TLauncher не должен содержать пробелы.");
+
+        var url = $"https://tlauncher.org/catalog/nickname/download/{Uri.EscapeDataString(nickname)}.png";
+        var safe = Paths.SafeName(nickname);
+        var dest = Path.Combine(Paths.Skins, $"TLauncher-{safe}-{DateTime.Now.Ticks}.png");
+        Directory.CreateDirectory(Paths.Skins);
+
+        try
+        {
+            await HttpService.DownloadFileAsync(url, dest, null, 0, ct);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                $"Не удалось скачать скин TLauncher для «{nickname}»: {ex.Message}", ex);
+        }
+
+        if (!File.Exists(dest) || new FileInfo(dest).Length == 0)
+            throw new InvalidOperationException($"Сайт TLauncher не вернул скин для «{nickname}».");
+
+        var isDefault = IsTLauncherDefaultSkin(dest);
+
+        return new SkinProfile
+        {
+            Provider = "TLauncher",
+            Nickname = nickname,
+            SkinUrl = url,
+            LocalSkinPath = dest,
+            Model = "classic",
+            IsDefault = isDefault
+        };
+    }
+
+    private static bool IsTLauncherDefaultSkin(string path)
+    {
+        try
+        {
+            using var stream = File.OpenRead(path);
+            var hash = Convert.ToHexString(MD5.HashData(stream));
+            return TLauncherDefaultHashes.Contains(hash);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static string? ReadTexturesUrl(JsonElement root, string key)
