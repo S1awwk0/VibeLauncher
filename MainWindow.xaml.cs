@@ -662,7 +662,9 @@ public partial class MainWindow : Window
     private void Snapshots_Changed(object sender, RoutedEventArgs e)
     {
         if (_initializing) return;
-        var value = SnapshotsCheck.IsChecked == true || ShowSnapshotsCheck.IsChecked == true;
+        var value = sender is CheckBox checkBox
+            ? checkBox.IsChecked == true
+            : SnapshotsCheck.IsChecked == true;
         _initializing = true;
         SnapshotsCheck.IsChecked = value;
         ShowSnapshotsCheck.IsChecked = value;
