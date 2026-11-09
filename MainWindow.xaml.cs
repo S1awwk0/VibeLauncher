@@ -39,6 +39,16 @@ public partial class MainWindow : Window
     private bool _initializing = true;
     private bool _suppressCombo;
 
+    private static readonly string[] FallbackMcVersions =
+    {
+        "1.21.4", "1.21.3", "1.21.1", "1.21",
+        "1.20.6", "1.20.4", "1.20.1", "1.20",
+        "1.19.4", "1.19.2", "1.19",
+        "1.18.2", "1.17.1", "1.16.5", "1.16.1",
+        "1.15.2", "1.14.4", "1.13.2", "1.12.2",
+        "1.11.2", "1.10.2", "1.9.4", "1.8.9", "1.7.10"
+    };
+
     public MainWindow()
     {
         InitializeComponent();
@@ -101,10 +111,9 @@ public partial class MainWindow : Window
         RefreshLogsList();
         ShowPage("home");
 
-        LoaderMcBox.Text = "1.21.4";
-        NewInstanceMc.Text = "1.21.4";
-
+        PopulateMinecraftVersions();
         await LoadManifestAsync();
+        PopulateMinecraftVersions();
         await DetectJavaAsync(true);
 
         _initializing = false;
@@ -738,7 +747,7 @@ public partial class MainWindow : Window
         UpdateLoaderJavaHint();
     }
 
-    private void LoaderMc_TextChanged(object sender, TextChangedEventArgs e)
+    private void LoaderMc_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         UpdateLoaderJavaHint();
         if (_initializing) return;
@@ -746,9 +755,36 @@ public partial class MainWindow : Window
         _loaderTimer.Start();
     }
 
+    private string SelectedMcVersion => LoaderMcCombo.SelectedItem as string ?? "";
+
+    private void PopulateMinecraftVersions()
+    {
+        var versions = _manifest?.Versions
+            .Where(v => v.Type == "release")
+            .Select(v => v.Id)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList() ?? new List<string>();
+
+        if (versions.Count == 0) versions = FallbackMcVersions.ToList();
+
+        var previousLoader = LoaderMcCombo.SelectedItem as string;
+        var previousNew = NewInstanceMcCombo.SelectedItem as string;
+
+        LoaderMcCombo.ItemsSource = versions;
+        NewInstanceMcCombo.ItemsSource = versions;
+
+        LoaderMcCombo.SelectedItem = versions.Contains(previousLoader ?? "")
+            ? previousLoader
+            : versions.FirstOrDefault(v => v.Equals("1.21.4", StringComparison.OrdinalIgnoreCase)) ?? versions.FirstOrDefault();
+
+        NewInstanceMcCombo.SelectedItem = versions.Contains(previousNew ?? "")
+            ? previousNew
+            : versions.FirstOrDefault(v => v.Equals("1.21.4", StringComparison.OrdinalIgnoreCase)) ?? versions.FirstOrDefault();
+    }
+
     private void UpdateLoaderJavaHint()
     {
-        var mc = LoaderMcBox.Text.Trim();
+        var mc = SelectedMcVersion;
         if (string.IsNullOrWhiteSpace(mc)) return;
         var major = JavaService.RecommendedMajor(mc);
         JavaRecommendText.Text = $"Minecraft {mc}: требуется Java {major}";
@@ -761,7 +797,7 @@ public partial class MainWindow : Window
 
     private async Task RefreshLoaderVersionsAsync()
     {
-        var mc = LoaderMcBox.Text.Trim();
+        var mc = SelectedMcVersion;
         if (string.IsNullOrWhiteSpace(mc)) return;
         var loader = SelectedLoader();
 
@@ -795,10 +831,10 @@ public partial class MainWindow : Window
 
     private async void InstallLoader_Click(object sender, RoutedEventArgs e)
     {
-        var mc = LoaderMcBox.Text.Trim();
+        var mc = SelectedMcVersion;
         if (string.IsNullOrWhiteSpace(mc))
         {
-            MessageBox.Show("Укажите версию Minecraft.", "Загрузчик", MessageBoxButton.OK,
+            MessageBox.Show("Выберите версию Minecraft.", "Загрузчик", MessageBoxButton.OK,
                 MessageBoxImage.Warning);
             return;
         }
@@ -1031,10 +1067,10 @@ public partial class MainWindow : Window
     private async void CreateInstance_Click(object sender, RoutedEventArgs e)
     {
         var name = NewInstanceName.Text.Trim();
-        var mc = NewInstanceMc.Text.Trim();
+        var mc = NewInstanceMcCombo.SelectedItem as string ?? "";
         if (string.IsNullOrWhiteSpace(mc))
         {
-            CreateStatus.Text = "Укажите версию Minecraft";
+            CreateStatus.Text = "Выберите версию Minecraft";
             return;
         }
 

@@ -433,7 +433,8 @@
                                 <ComboBox x:Name="LoaderTypeCombo" Height="36" SelectionChanged="LoaderType_SelectionChanged"/>
 
                                 <TextBlock Text="Версия Minecraft" Style="{StaticResource FieldLabel}" Margin="0,12,0,5"/>
-                                <TextBox x:Name="LoaderMcBox" Height="36" TextChanged="LoaderMc_TextChanged"/>
+                                <ComboBox x:Name="LoaderMcCombo" Height="36" MaxDropDownHeight="360"
+                                          SelectionChanged="LoaderMc_SelectionChanged" ToolTip="Выберите версию Minecraft"/>
 
                                 <Grid Margin="0,12,0,0">
                                     <TextBlock Text="Версия загрузчика" Style="{StaticResource FieldLabel}" VerticalAlignment="Center"/>
@@ -514,10 +515,15 @@
                                     CornerRadius="10" Padding="12">
                                 <StackPanel>
                                     <TextBlock Text="Новая сборка" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="Название" Style="{StaticResource FieldLabel}" Margin="0,0,0,4"/>
                                     <TextBox x:Name="NewInstanceName" Height="32" ToolTip="Название сборки" Margin="0,0,0,6"/>
-                                    <TextBox x:Name="NewInstanceMc" Height="32" ToolTip="Версия Minecraft" Margin="0,0,0,6"/>
+                                    <TextBlock Text="Версия Minecraft" Style="{StaticResource FieldLabel}" Margin="0,0,0,4"/>
+                                    <ComboBox x:Name="NewInstanceMcCombo" Height="32" MaxDropDownHeight="320"
+                                              ToolTip="Выберите версию Minecraft" Margin="0,0,0,6"/>
+                                    <TextBlock Text="Ядро" Style="{StaticResource FieldLabel}" Margin="0,0,0,4"/>
                                     <ComboBox x:Name="NewInstanceLoader" Height="32" Margin="0,0,0,6"
                                               SelectionChanged="NewInstanceLoader_SelectionChanged"/>
+                                    <TextBlock Text="Версия ядра (авто)" Style="{StaticResource FieldLabel}" Margin="0,0,0,4"/>
                                     <TextBox x:Name="NewInstanceLoaderVersion" Height="32" ToolTip="Версия загрузчика (авто)" Margin="0,0,0,6"/>
                                     <Button Content="Создать сборку" Style="{StaticResource PrimaryButton}" FontSize="12"
                                             Padding="10,7" Click="CreateInstance_Click"/>
