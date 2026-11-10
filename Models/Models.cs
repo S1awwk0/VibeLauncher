@@ -20,6 +20,8 @@ public sealed class LauncherSettings
     public string SkinProvider { get; set; } = "Mojang";
     public string SkinNickname { get; set; } = "";
     public string SkinModel { get; set; } = "classic";
+    /// <summary>Проверять и при необходимости устанавливать CustomSkinLoader перед запуском сборки.</summary>
+    public bool LaunchWithCustomSkinLoader { get; set; } = true;
     public string LocalSkinPath { get; set; } = "";
     public string LocalCapePath { get; set; } = "";
     public List<Account> Accounts { get; set; } = new();
@@ -354,6 +356,8 @@ public sealed class SkinProfile
     public string? LocalCapePath { get; set; }
     /// <summary>Сайт TLauncher вернул стандартный скин: у ника нет собственного.</summary>
     public bool IsDefault { get; set; }
+    /// <summary>Модель (slim/classic) получена из API, а не выбрана пользователем.</summary>
+    public bool ModelDetected { get; set; }
 }
 
 public sealed class LogEntry

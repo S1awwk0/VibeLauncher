@@ -144,12 +144,44 @@ public partial class MainWindow : Window
         ShowSnapshotsCheck.IsChecked = s.ShowSnapshots;
         SnapshotsCheck.IsChecked = s.ShowSnapshots;
         SkinNicknameBox.Text = s.SkinNickname;
+        HomeCslCheck.IsChecked = s.LaunchWithCustomSkinLoader;
+        SkinCslCheck.IsChecked = s.LaunchWithCustomSkinLoader;
 
         var index = SkinProviderCombo.Items.IndexOf(s.SkinProvider);
         SkinProviderCombo.SelectedIndex = index >= 0 ? index : 0;
         SkinModelCombo.SelectedIndex = s.SkinModel == "slim" ? 1 : 0;
 
+        UpdateCslHint();
         _initializing = false;
+    }
+
+    private void CslLaunch_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializing) return;
+
+        var value = sender is CheckBox checkBox
+            ? checkBox.IsChecked == true
+            : SettingsService.Current.LaunchWithCustomSkinLoader;
+
+        _initializing = true;
+        HomeCslCheck.IsChecked = value;
+        SkinCslCheck.IsChecked = value;
+        _initializing = false;
+
+        SettingsService.Current.LaunchWithCustomSkinLoader = value;
+        SettingsService.Save();
+        UpdateCslHint();
+    }
+
+    private void UpdateCslHint()
+    {
+        var enabled = SettingsService.Current.LaunchWithCustomSkinLoader;
+        var text = enabled
+            ? "CustomSkinLoader проверяется и при необходимости устанавливается перед запуском сборки. Ванильные версии запускаются без мода."
+            : "Автоустановка мода выключена. Без CustomSkinLoader скины TLauncher/Ely.by в игре не отображаются.";
+
+        if (HomeCslHint != null) HomeCslHint.Text = text;
+        if (SkinCslHint != null) SkinCslHint.Text = text;
     }
 
     // ═════════════════════════════ UI HELPERS ═════════════════════════════
@@ -547,10 +579,10 @@ public partial class MainWindow : Window
             }
         }
 
-        await LaunchAsync(target.VersionId, target.GameDir, target.Display);
+        await LaunchAsync(target.VersionId, target.GameDir, target.Display, instance);
     }
 
-    private async Task LaunchAsync(string versionId, string gameDir, string label)
+    private async Task LaunchAsync(string versionId, string gameDir, string label, InstanceInfo? instance = null)
     {
         if (_busy) return;
         var account = SettingsService.SelectedAccount;
@@ -569,6 +601,42 @@ public partial class MainWindow : Window
 
         try
         {
+            if (instance != null)
+            {
+                if (!SettingsService.Current.LaunchWithCustomSkinLoader)
+                {
+                    StatusDetail.Text = "CustomSkinLoader отключён в настройках";
+                }
+                else if (instance.Loader == "vanilla")
+                {
+                    StatusText.Text = "CustomSkinLoader не устанавливается в ванильную сборку";
+                    StatusDetail.Text = "Создайте сборку с Fabric, Quilt, Forge или NeoForge, чтобы видеть скины TLauncher/Ely.by.";
+                }
+                else
+                {
+                    StatusText.Text = "Проверка CustomSkinLoader…";
+                    try
+                    {
+                        var cslProgress = new Progress<string>(text =>
+                        {
+                            StatusText.Text = "CustomSkinLoader";
+                            StatusDetail.Text = text;
+                        });
+                        var cslFile = await SkinService.EnsureCustomSkinLoaderAsync(instance, cslProgress);
+                        StatusDetail.Text = "CustomSkinLoader готов: " + cslFile;
+                    }
+                    catch (Exception ex)
+                    {
+                        LogService.WriteCrash("CustomSkinLoader", ex.ToString());
+                        var answer = MessageBox.Show(
+                            "Не удалось установить CustomSkinLoader:\n" + ex.Message +
+                            "\n\nЗапустить игру без мода? Скины TLauncher/Ely.by видны не будут.",
+                            "CustomSkinLoader", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                        if (answer != MessageBoxResult.Yes) return;
+                    }
+                }
+            }
+
             await AuthService.EnsureValidAsync(account);
             Directory.CreateDirectory(gameDir);
             var result = await VersionService.LaunchAsync(versionId, gameDir, account, progress);
@@ -1162,7 +1230,8 @@ public partial class MainWindow : Window
             }
         }
 
-        await LaunchAsync(_selectedInstance.VersionId, _selectedInstance.Directory, "Сборка · " + _selectedInstance.Name);
+        await LaunchAsync(_selectedInstance.VersionId, _selectedInstance.Directory, "Сборка · " + _selectedInstance.Name,
+            _selectedInstance);
     }
 
     private void InstanceOpenFolder_Click(object sender, RoutedEventArgs e)
@@ -1282,8 +1351,8 @@ public partial class MainWindow : Window
         try
         {
             var progress = new Progress<string>(text => InstanceStatus.Text = text);
-            var file = await SkinService.InstallCustomSkinLoaderAsync(_selectedInstance, progress);
-            InstanceStatus.Text = "CustomSkinLoader установлен: " + file;
+            var file = await SkinService.EnsureCustomSkinLoaderAsync(_selectedInstance, progress);
+            InstanceStatus.Text = "CustomSkinLoader готов: " + file;
             LoadMods();
         }
         catch (Exception ex)
@@ -1305,8 +1374,8 @@ public partial class MainWindow : Window
         SkinStatus.Text = index switch
         {
             0 => "Mojang: загрузка по никнейму через официальный API.",
-            1 => "Ely.by: скины и плащи по никнейму.",
-            2 => "TLauncher: скин скачивается с сайта по никнейму. Вход в аккаунт — на сайте TLauncher.",
+            1 => "Ely.by: скины и плащи по никнейму. Вход в аккаунт — на сайте Ely.by.",
+            2 => "TLauncher: скин и модель берутся из API auth.tlauncher.org. Вход в аккаунт — на сайте TLauncher.",
             3 => "TLauncher (локально): поиск skin.png и cape.png в папках TLauncher.",
             _ => ""
         };
@@ -1348,8 +1417,8 @@ public partial class MainWindow : Window
                 _ => await SkinService.FetchMojangAsync(nickname)
             };
 
-            // Сайт TLauncher не отдаёт модель скина, поэтому сохраняем выбор пользователя.
-            if (provider == 2)
+            // Если API TLauncher не отдал модель, сохраняем выбор пользователя.
+            if (provider == 2 && !profile.ModelDetected)
                 profile.Model = SkinModelCombo.SelectedIndex == 1 ? "slim" : "classic";
 
             SettingsService.Current.SkinNickname = profile.Nickname;
@@ -1404,6 +1473,15 @@ public partial class MainWindow : Window
 
     private void OpenTLauncherProfile_Click(object sender, RoutedEventArgs e) =>
         OpenExternal(SkinService.TLauncherProfileUrl);
+
+    private void OpenElySkins_Click(object sender, RoutedEventArgs e) =>
+        OpenExternal(SkinService.ElySkinsUrl);
+
+    private void OpenElyLogin_Click(object sender, RoutedEventArgs e) =>
+        OpenExternal(SkinService.ElyLoginUrl);
+
+    private void OpenElyProfile_Click(object sender, RoutedEventArgs e) =>
+        OpenExternal(SkinService.ElyProfileUrl);
 
     private void OpenExternal(string url)
     {
@@ -1517,9 +1595,13 @@ public partial class MainWindow : Window
         try
         {
             await SkinService.ApplyToInstanceAsync(instance, account, _skin);
-            SkinStatus.Text = $"Скин записан в «{instance.Name}». Установите CustomSkinLoader, если ещё не установлен.";
             SettingsService.Current.SkinModel = _skin.Model;
             SettingsService.Save();
+
+            var cslInstalled = SkinService.IsCustomSkinLoaderInstalled(instance);
+            SkinStatus.Text = cslInstalled
+                ? $"Скин записан в «{instance.Name}». CustomSkinLoader установлен — запускайте игру."
+                : $"Скин записан в «{instance.Name}». CustomSkinLoader ещё не установлен, иначе скин в игре не появится.";
         }
         catch (Exception ex)
         {
@@ -1553,8 +1635,8 @@ public partial class MainWindow : Window
         try
         {
             var progress = new Progress<string>(text => SkinStatus.Text = text);
-            var file = await SkinService.InstallCustomSkinLoaderAsync(instance, progress);
-            SkinStatus.Text = "CustomSkinLoader установлен: " + file;
+            var file = await SkinService.EnsureCustomSkinLoaderAsync(instance, progress);
+            SkinStatus.Text = "CustomSkinLoader готов: " + file + ". Источники TLauncher/Ely.by настроены.";
         }
         catch (Exception ex)
         {
