@@ -106,7 +106,10 @@ public static class HttpService
         {
             try
             {
-                using var response = await Client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+                using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Accept.Clear();
+                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("*/*"));
+                using var response = await Client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
                 response.EnsureSuccessStatusCode();
 
                 var total = expectedSize > 0 ? expectedSize : response.Content.Headers.ContentLength ?? 0;
