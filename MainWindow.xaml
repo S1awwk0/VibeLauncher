@@ -289,6 +289,12 @@
                                         Background="{StaticResource AccentGradient}" Foreground="White"
                                         FontSize="18" FontWeight="Bold" Content="ИГРАТЬ" VerticalAlignment="Center"/>
                             </Grid>
+                            <StackPanel Margin="0,14,0,0">
+                                <CheckBox x:Name="HomeCslCheck" Content="Запускать с CustomSkinLoader"
+                                          Checked="CslLaunch_Changed" Unchecked="CslLaunch_Changed"/>
+                                <TextBlock x:Name="HomeCslHint" Style="{StaticResource Hint}" Margin="0,5,0,0"
+                                           Text="CustomSkinLoader проверяется и устанавливается перед запуском сборки. Скины TLauncher и Ely.by видны в игре только с этим модом."/>
+                            </StackPanel>
                             <StackPanel Margin="0,16,0,0">
                                 <ProgressBar x:Name="InstallProgress" Height="6" Value="0" Visibility="Collapsed"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
@@ -712,7 +718,7 @@
                                 <StackPanel>
                                     <TextBlock Text="Сайт TLauncher" Style="{StaticResource SectionTitle}" FontSize="14"/>
                                     <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,6,0,0"
-                                               Text="Скин по никнейму скачивается с сайта TLauncher. Вход в аккаунт, смена скина и плаща выполняются на сайте TLauncher — откроется обычный браузер."/>
+                                               Text="Скин и модель (classic/slim) берутся из API auth.tlauncher.org, при его недоступности — с сайта TLauncher. Вход в аккаунт, смена скина и плаща выполняются на сайте TLauncher — откроется обычный браузер."/>
                                     <WrapPanel Margin="0,10,0,0">
                                         <Button Content="Сайт скинов" Style="{StaticResource SmallButton}"
                                                 Margin="0,0,7,7" Click="OpenTLauncherSkins_Click"/>
@@ -721,6 +727,23 @@
                                         <Button Content="Мой профиль" Style="{StaticResource GhostButton}"
                                                 FontSize="11.5" Padding="11,5" Margin="0,0,7,7"
                                                 Click="OpenTLauncherProfile_Click"/>
+                                    </WrapPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Сайт Ely.by" Style="{StaticResource SectionTitle}" FontSize="14"/>
+                                    <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,6,0,0"
+                                               Text="Скин и плащ загружаются через skinsystem.ely.by по никнейму. Вход в аккаунт, смена скина и плаща выполняются на сайте Ely.by — откроется обычный браузер."/>
+                                    <WrapPanel Margin="0,10,0,0">
+                                        <Button Content="Сайт скинов" Style="{StaticResource SmallButton}"
+                                                Margin="0,0,7,7" Click="OpenElySkins_Click"/>
+                                        <Button Content="Войти на Ely.by" Style="{StaticResource SmallButton}"
+                                                Margin="0,0,7,7" Click="OpenElyLogin_Click"/>
+                                        <Button Content="Мой профиль" Style="{StaticResource GhostButton}"
+                                                FontSize="11.5" Padding="11,5" Margin="0,0,7,7"
+                                                Click="OpenElyProfile_Click"/>
                                     </WrapPanel>
                                 </StackPanel>
                             </Border>
@@ -736,6 +759,10 @@
                                         <Button Content="Сохранить в аккаунт" Style="{StaticResource GhostButton}"
                                                 FontSize="12" Padding="12,7" Margin="7,0,0,0" Click="SaveSkinAccount_Click"/>
                                     </StackPanel>
+                                    <CheckBox x:Name="SkinCslCheck" Content="Запускать с CustomSkinLoader"
+                                              Margin="0,12,0,0" Checked="CslLaunch_Changed" Unchecked="CslLaunch_Changed"/>
+                                    <TextBlock x:Name="SkinCslHint" Style="{StaticResource Hint}" Margin="0,5,0,0"
+                                               Text="Перед запуском сборки мод будет проверен и при необходимости установлен автоматически."/>
                                     <Button x:Name="SkinCslButton" Content="Установить CustomSkinLoader в сборку"
                                             Style="{StaticResource SmallButton}" Margin="0,8,0,0" Click="SkinCsl_Click"/>
                                     <TextBlock x:Name="SkinStatus" Style="{StaticResource Hint}" Margin="0,9,0,0"
@@ -744,8 +771,18 @@
                             </Border>
 
                             <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Кто видит скины" Style="{StaticResource SectionTitle}" FontSize="14"/>
+                                    <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,7,0,0"
+                                               Text="Свой скин и чужие скины TLauncher/Ely.by отображаются в игре только при установленном CustomSkinLoader (CSL). В ванильном клиенте без мода скины сторонних сервисов не видны."/>
+                                    <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,6,0,0"
+                                               Text="Другие игроки увидят твой скин, если у них установлен TLauncher или CustomSkinLoader с источником TLauncher/Ely.by. Ванильный клиент чужой скин не покажет — сервер скины не передаёт."/>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
                                 <TextBlock Style="{StaticResource Hint}"
-                                           Text="Mojang и Ely.by загружаются по никнейму. TLauncher: скин скачивается с сайта по никнейму, а вход и смена скина выполняются в браузере на tlauncher.org. Если у ника нет скина, сайт отдаёт стандартный — лаунчер предупредит об этом. Для отображения скина в офлайн-игре установите CustomSkinLoader и примените скин в сборку."/>
+                                           Text="Mojang и Ely.by загружаются по никнейму. TLauncher: скин и модель (classic/slim) берутся из API auth.tlauncher.org, при его недоступности — из каталога сайта. Вход и смена скина выполняются в браузере на tlauncher.org. Локальный скин записывается в CustomSkinLoader/LocalSkin и виден только на этом компьютере."/>
                             </Border>
                         </StackPanel>
                     </Grid>
